@@ -36,10 +36,27 @@ async function streamChat({ question, history, report, benchmark, onText }) {
       }
     },
   })
+  const rawText = String(raw || '')
   const unwrapped = unwrapAnswer(raw)
-  const answer = typeof unwrapped === 'string' ? unwrapped : JSON.stringify(unwrapped)
-  if (answer.length > shown.length) {
+  let answer
+  if (typeof unwrapped === 'string') {
+    const trimmed = rawText.trim()
+    // unwrap 成功会得到与原始 JSON 不同的正文；失败则退回整段原始串
+    const extracted =
+      unwrapped !== trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('```'))
+    answer = extracted ? unwrapped : shown || unwrapped
+  } else {
+    // 非字符串（少见）时不要 JSON.stringify 回灌到对话里
+    answer = shown || peekAnswer(rawText) || ''
+  }
+
+  // 仅当最终正文是已展示内容的前缀延长时才补推，避免把 JSON 尾巴（如 }）拼上去
+  if (answer.startsWith(shown) && answer.length > shown.length) {
     await onText?.(answer.slice(shown.length))
+  } else if (!shown && answer) {
+    await onText?.(answer)
+  } else if (shown && !answer.startsWith(shown)) {
+    answer = shown
   }
   return answer
 }
