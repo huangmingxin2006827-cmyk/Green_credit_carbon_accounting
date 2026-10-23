@@ -1,0 +1,10 @@
+.env
+data/reports/*
+data/tasks/*
+data/cache/*
+data/uploads/*
+!data/reports/.gitkeep
+!data/tasks/.gitkeep
+!data/cache/.gitkeep
+!data/uploads/.gitkeep
+!data/benchmarks.json

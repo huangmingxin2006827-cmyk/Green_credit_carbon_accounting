@@ -1,0 +1,33 @@
+node_modules
+dist
+.DS_Store
+*.log
+.env
+packages/backend/.env
+packages/backend/data/reports/*
+packages/backend/data/tasks/*
+packages/backend/data/cache/*
+packages/backend/data/uploads/*
+!packages/backend/data/reports/.gitkeep
+!packages/backend/data/tasks/.gitkeep
+!packages/backend/data/cache/.gitkeep
+!packages/backend/data/uploads/.gitkeep
+packages/frontend/dist
+packages/frontend/.tools
+.vite/
+packages/frontend/.vite/
+
+# Internal specs / docs (keep local, not for public repo)
+SPEC_ALIGNMENT.md
+resources/
+benchmark.csv
+
+# Unused login media (not imported by app)
+packages/frontend/src/assets/auth-sky-green.jpg
+packages/frontend/src/assets/auth-hero-landscape.png
+packages/frontend/src/assets/auth-nature-green-poster.jpg
+packages/frontend/src/assets/auth-nature-green.mp4
+
+# Competition submission drafts (PDF/md kept local)
+submission/
+

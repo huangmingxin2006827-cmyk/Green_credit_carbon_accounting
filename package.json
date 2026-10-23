@@ -1,0 +1,10 @@
+{
+  "name": "carbon-footprint-credit",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix packages/backend",
+    "dev:frontend": "npm run dev --prefix packages/frontend",
+    "install:all": "npm install --prefix packages/backend && npm install --prefix packages/frontend"
+  }
+}

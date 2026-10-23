@@ -1,0 +1,24 @@
+{
+  "name": "carbon-footprint-backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch --watch-path=./app.js --watch-path=./routes --watch-path=./controllers --watch-path=./services --watch-path=./agents --watch-path=./middleware --watch-path=./utils app.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "docx": "^9.5.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "mysql2": "^3.24.5",
+    "pdfkit": "^0.16.0",
+    "xlsx": "^0.18.5"
+  }
+}
