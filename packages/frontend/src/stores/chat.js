@@ -74,47 +74,48 @@ export const useChatStore = defineStore('chat', () => {
     resetLocal()
   }
 
-  async function submitMessage() {
-    const text = inputText.value.trim()
-    if (!text || streaming.value) return
+  function findBucketByMsgId(id) {
+    if (knowledge.value.some((m) => m.id === id)) return knowledge
+    if (followup.value.some((m) => m.id === id)) return followup
+    return null
+  }
+
+  async function runStreamRound({
+    text,
+    reportId,
+    history,
+    bucket,
+    assistant,
+    removeAssistantIfEmpty,
+    keepUntilFirstChunk = false,
+  }) {
     const token = ++chatEpoch
-    const reportStore = useReportStore()
-    const reportId = reportStore.reportId
-    const bucket = reportId ? followup : knowledge
-    const userMsg = newMsg('user', text)
-    const assistant = newMsg('assistant', '', { streaming: true })
-    bucket.value.push(userMsg, assistant)
-    inputText.value = ''
     streaming.value = true
     errorMessage.value = ''
-
-    const timeline = [...knowledge.value, ...followup.value]
-    const history = toHistory(timeline.slice(0, -2))
     lastPayload = { text, reportId, history }
+    const patchAssistant = (patch) => {
+      if (token !== chatEpoch) return
+      Object.assign(assistant, patch)
+      const idx = bucket.value.findIndex((m) => m.id === assistant.id)
+      if (idx >= 0) {
+        bucket.value[idx] = { ...bucket.value[idx], ...patch }
+      }
+    }
 
     const handlers = {
       onText(_chunk, full) {
-        if (token !== chatEpoch) return
-        assistant.content = full
-        const idx = bucket.value.findIndex((m) => m.id === assistant.id)
-        if (idx >= 0) {
-          bucket.value[idx] = { ...bucket.value[idx], content: full, streaming: true }
-        }
+        if (keepUntilFirstChunk && !String(full || '').length) return
+        patchAssistant({ content: full, streaming: true, regenerating: false })
       },
       onDone(_payload, full) {
-        if (token !== chatEpoch) return
-        const idx = bucket.value.findIndex((m) => m.id === assistant.id)
-        const shown = full || assistant.content
-        if (idx >= 0) {
-          bucket.value[idx] = { ...bucket.value[idx], content: shown, streaming: false }
-        }
-        assistant.content = shown
-        assistant.streaming = false
+        // 有新全文则写入；否则保留气泡里已有内容（含刷新未出首包时的旧文案）
+        const next = String(full || '').length ? full : assistant.content
+        patchAssistant({ content: next, streaming: false, regenerating: false })
       },
       onError(err) {
         if (token !== chatEpoch) return
         errorMessage.value = err.message || 'AI 服务异常'
-        assistant.streaming = false
+        patchAssistant({ streaming: false, regenerating: false })
       },
     }
 
@@ -127,15 +128,74 @@ export const useChatStore = defineStore('chat', () => {
     } catch (err) {
       if (token !== chatEpoch) return
       errorMessage.value = err.message || '发送失败'
-      if (!assistant.content) {
-        const i = bucket.value.lastIndexOf(assistant)
+      if (removeAssistantIfEmpty && !assistant.content) {
+        const i = bucket.value.findIndex((m) => m.id === assistant.id)
         if (i >= 0) bucket.value.splice(i, 1)
       }
     } finally {
       if (token !== chatEpoch) return
-      assistant.streaming = false
+      patchAssistant({ streaming: false, regenerating: false })
       streaming.value = false
     }
+  }
+
+  async function submitMessage() {
+    const text = inputText.value.trim()
+    if (!text || streaming.value) return
+    const reportStore = useReportStore()
+    const reportId = reportStore.reportId
+    const bucket = reportId ? followup : knowledge
+    const userMsg = newMsg('user', text)
+    const assistant = newMsg('assistant', '', { streaming: true })
+    bucket.value.push(userMsg, assistant)
+    inputText.value = ''
+
+    const timeline = [...knowledge.value, ...followup.value]
+    const history = toHistory(timeline.slice(0, -2))
+    await runStreamRound({
+      text,
+      reportId,
+      history,
+      bucket,
+      assistant,
+      removeAssistantIfEmpty: true,
+    })
+  }
+
+  async function regenerateMessage(assistantId) {
+    if (!assistantId || streaming.value) return
+    const bucket = findBucketByMsgId(assistantId)
+    if (!bucket) return
+    const idx = bucket.value.findIndex((m) => m.id === assistantId)
+    if (idx < 0) return
+    const assistant = bucket.value[idx]
+    if (assistant.role !== 'assistant') return
+    const userMsg = idx > 0 ? bucket.value[idx - 1] : null
+    if (!userMsg || userMsg.role !== 'user' || !String(userMsg.content || '').trim()) return
+
+    const text = String(userMsg.content).trim()
+    const reportStore = useReportStore()
+    // 按消息所在通道决定接口：followup 用当前报告追问；knowledge 走知识问答
+    const reportId = bucket === followup ? reportStore.reportId : null
+    if (bucket === followup && !reportId) return
+
+    const timeline = [...knowledge.value, ...followup.value]
+    const globalIdx = timeline.findIndex((m) => m.id === userMsg.id)
+    const history = toHistory(globalIdx >= 0 ? timeline.slice(0, globalIdx) : [])
+
+    // 保留旧文案，标为重新生成中；首包到达后再替换
+    bucket.value[idx] = { ...assistant, streaming: true, regenerating: true }
+    const live = bucket.value[idx]
+
+    await runStreamRound({
+      text,
+      reportId,
+      history,
+      bucket,
+      assistant: live,
+      removeAssistantIfEmpty: false,
+      keepUntilFirstChunk: true,
+    })
   }
 
   async function retryLast() {
@@ -155,6 +215,7 @@ export const useChatStore = defineStore('chat', () => {
     loadHistory,
     resetLocal,
     submitMessage,
+    regenerateMessage,
     retryLast,
     clearChat,
     abandonRound,

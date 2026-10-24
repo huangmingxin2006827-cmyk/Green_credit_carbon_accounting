@@ -5,11 +5,13 @@ import { ElButton, ElUpload, ElTag, ElAlert, ElMessage, ElMessageBox } from 'ele
 import {
   ArrowDown,
   ArrowUp,
+  CopyDocument,
   Delete,
   Hide,
   Paperclip,
   Promotion,
   RefreshLeft,
+  RefreshRight,
   SwitchButton,
   View,
 } from '@element-plus/icons-vue'
@@ -108,6 +110,22 @@ function onDiscard(id) {
 
 function onSubmit() {
   void chatStore.submitMessage()
+}
+
+async function copyAnswer(msg) {
+  const text = String(msg?.content || '').trim()
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制')
+  } catch {
+    ElMessage.error('复制失败')
+  }
+}
+
+function refreshAnswer(msg) {
+  if (!msg?.id || streaming.value) return
+  void chatStore.regenerateMessage(msg.id)
 }
 
 function clearCurrentReport() {
@@ -251,10 +269,38 @@ function onKeydown(e) {
       <div class="thread">
         <p v-if="showWelcome" class="hint">{{ CHAT_WELCOME_HINT }}</p>
         <div v-for="msg in chatHistory" :key="msg.id" class="row" :class="msg.role">
-          <div class="bubble">
+          <div class="bubble" :class="{ regenerating: msg.regenerating }">
             <template v-if="msg.role === 'user'">{{ msg.content }}</template>
-            <div v-else class="md" v-html="assistantHtml(msg.content)" />
-            <span v-if="msg.streaming" class="cursor">▍</span>
+            <template v-else>
+              <div v-if="msg.regenerating" class="regen-hint">重新生成中…</div>
+              <div class="md" v-html="assistantHtml(msg.content)" />
+            </template>
+            <span v-if="msg.streaming && !msg.regenerating" class="cursor">▍</span>
+          </div>
+          <div
+            v-if="msg.role === 'assistant' && !msg.streaming && msg.content"
+            class="msg-actions"
+          >
+            <el-button
+              text
+              size="small"
+              :icon="CopyDocument"
+              :disabled="streaming"
+              title="复制"
+              @click="copyAnswer(msg)"
+            >
+              复制
+            </el-button>
+            <el-button
+              text
+              size="small"
+              :icon="RefreshRight"
+              :disabled="streaming"
+              title="刷新"
+              @click="refreshAnswer(msg)"
+            >
+              刷新
+            </el-button>
           </div>
         </div>
       </div>
@@ -428,7 +474,28 @@ h2 {
 }
 .row.assistant,
 .row.system {
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: flex-start;
+  gap: 4px;
+}
+.msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.row.assistant:hover .msg-actions {
+  opacity: 0.9;
+}
+.msg-actions :deep(.el-button) {
+  --el-button-text-color: rgba(255, 255, 255, 0.55);
+  --el-button-hover-text-color: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  height: auto;
+  font-size: 12px;
 }
 .bubble {
   max-width: 92%;
@@ -436,6 +503,15 @@ h2 {
   border-radius: 12px;
   font-size: 13.5px;
   line-height: 1.55;
+}
+.bubble.regenerating .md {
+  opacity: 0.45;
+}
+.regen-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: rgba(45, 212, 191, 0.85);
+  letter-spacing: 0.02em;
 }
 .user .bubble {
   background: var(--primary);
