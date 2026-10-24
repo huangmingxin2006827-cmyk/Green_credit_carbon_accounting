@@ -52,4 +52,25 @@ function me(req, res) {
   res.json(ok({ user: req.user }))
 }
 
-module.exports = { login, register, me }
+async function changePassword(req, res, next) {
+  try {
+    const oldPassword = String(req.body.oldPassword || '')
+    const newPassword = String(req.body.newPassword || '')
+    if (!oldPassword || !newPassword) throw fail('AI_ERROR', '请填写当前密码和新密码', 400)
+    if (newPassword.length < 6) throw fail('AI_ERROR', '新密码至少 6 位', 400)
+    if (oldPassword === newPassword) throw fail('AI_ERROR', '新密码不能与当前密码相同', 400)
+
+    const row = await queryOne('SELECT id, password_hash FROM users WHERE id = ?', [req.user.id])
+    if (!row) throw fail('UNAUTHORIZED', '用户不存在', 401)
+    if (!bcrypt.compareSync(oldPassword, row.password_hash)) {
+      throw fail('UNAUTHORIZED', '当前密码不正确', 401)
+    }
+    const hash = bcrypt.hashSync(newPassword, 10)
+    await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, row.id])
+    res.json(ok({ changed: true }))
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { login, register, me, changePassword }

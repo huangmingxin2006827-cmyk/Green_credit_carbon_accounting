@@ -1,13 +1,28 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ElButton, ElUpload, ElTag, ElAlert, ElMessage, ElMessageBox } from 'element-plus'
+import {
+  ElAlert,
+  ElButton,
+  ElDialog,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage,
+  ElMessageBox,
+  ElTag,
+  ElUpload,
+} from 'element-plus'
 import {
   ArrowDown,
   ArrowUp,
   CopyDocument,
   Delete,
   Hide,
+  Key,
   Paperclip,
   Promotion,
   RefreshLeft,
@@ -37,6 +52,9 @@ const { chatHistory, inputText, streaming, errorMessage } = storeToRefs(chatStor
 const { bubbleVisible, taskList } = storeToRefs(taskStore)
 const inputRef = ref(null)
 const sugsOpen = ref(true)
+const pwdVisible = ref(false)
+const pwdSaving = ref(false)
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
 
 const visibleSuggestions = computed(() =>
   (suggestions.value || []).filter((s) => s.status !== 'rejected'),
@@ -44,12 +62,17 @@ const visibleSuggestions = computed(() =>
 const showWelcome = computed(() => !chatHistory.value.some((m) => m.role === 'user'))
 
 function normalizeChatText(raw) {
-  return String(raw || '')
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\n')
-    .replace(/\\t/g, '\t')
-    .replace(/\\+(?=\d+\.)/g, '\n')
+  let s = String(raw || '')
+  s = s.replace(/\\r\\n/g, '\n')
+  s = s.replace(/\\n/g, '\n')
+  s = s.replace(/\\r/g, '\n')
+  s = s.replace(/\\t/g, '\t')
+  s = s.replace(/\\"/g, '"')
+  s = s.replace(/\\'/g, "'")
+  s = s.replace(/\\\\/g, '\\')
+  s = s.replace(/\\(?=[\u4e00-\u9fff，。；：、！？《》（）【】])/g, '')
+  s = s.replace(/\\+(?=\d+\.)/g, '\n')
+  return s
 }
 
 function assistantHtml(raw) {
@@ -152,7 +175,7 @@ function clearCurrentReport() {
 async function restartWorkspace() {
   try {
     await ElMessageBox.confirm(
-      '将清空当前上传、图表、报告、建议和对话。已采纳的任务会保留。',
+      '将清空当前上传、图表、报告与建议。对话记录保留（可用「清空对话」单独清除）。已采纳的任务会保留。',
       '重新开始',
       {
         confirmButtonText: '清空',
@@ -170,10 +193,7 @@ async function restartWorkspace() {
   }
   try {
     clearCurrentReport()
-    if (typeof chatStore.abandonRound === 'function') chatStore.abandonRound()
-    else chatStore.resetLocal()
-    await chatStore.clearChat()
-    ElMessage.success('已清空当前核算')
+    ElMessage.success('已清空当前核算（对话已保留）')
   } catch (err) {
     ElMessage.error(err?.message || '清空失败')
   }
@@ -185,6 +205,45 @@ function logout() {
   chatStore.resetLocal()
   taskStore.resetLocal()
   router.replace('/login')
+}
+
+function openChangePassword() {
+  pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  pwdVisible.value = true
+}
+
+function onUserMenu(cmd) {
+  if (cmd === 'password') openChangePassword()
+  else if (cmd === 'logout') logout()
+}
+
+async function submitChangePassword() {
+  const { oldPassword, newPassword, confirmPassword } = pwdForm.value
+  if (!oldPassword || !newPassword) {
+    ElMessage.warning('请填写当前密码和新密码')
+    return
+  }
+  if (newPassword.length < 6) {
+    ElMessage.warning('新密码至少 6 位')
+    return
+  }
+  if (newPassword !== confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+  pwdSaving.value = true
+  try {
+    await auth.changePassword(oldPassword, newPassword)
+    pwdVisible.value = false
+    ElMessage.success('密码已修改')
+  } catch (err) {
+    // 401 会硬跳登录页并由登录页 ElMessage 提示，此处不再弹
+    if (err?.code !== 'UNAUTHORIZED') {
+      ElMessage.error(err?.message || '修改失败')
+    }
+  } finally {
+    pwdSaving.value = false
+  }
 }
 
 function onKeydown(e) {
@@ -248,10 +307,64 @@ function onKeydown(e) {
           重新开始
         </el-button>
         <RevealBtn :icon="Delete" label="清空对话" text @click="chatStore.clearChat()" />
-        <span class="who">{{ auth.displayName }}</span>
-        <RevealBtn :icon="SwitchButton" label="退出" text @click="logout" />
+        <el-dropdown trigger="click" @command="onUserMenu">
+          <button type="button" class="who-btn" :title="auth.displayName">
+            <span class="who">{{ auth.displayName }}</span>
+            <span class="who-caret">▾</span>
+          </button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="password" :icon="Key">修改密码</el-dropdown-item>
+              <el-dropdown-item command="logout" :icon="SwitchButton" divided>退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </header>
+
+    <el-dialog
+      v-model="pwdVisible"
+      title="修改密码"
+      width="400px"
+      append-to-body
+      destroy-on-close
+      class="pwd-dialog"
+    >
+      <el-form label-position="top" @submit.prevent="submitChangePassword">
+        <el-form-item label="当前密码">
+          <el-input
+            v-model="pwdForm.oldPassword"
+            type="password"
+            show-password
+            autocomplete="current-password"
+            placeholder="请输入当前密码"
+          />
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input
+            v-model="pwdForm.newPassword"
+            type="password"
+            show-password
+            autocomplete="new-password"
+            placeholder="至少 6 位"
+          />
+        </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input
+            v-model="pwdForm.confirmPassword"
+            type="password"
+            show-password
+            autocomplete="new-password"
+            placeholder="再次输入新密码"
+            @keydown.enter="submitChangePassword"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdVisible = false">取消</el-button>
+        <el-button type="primary" :loading="pwdSaving" @click="submitChangePassword">保存</el-button>
+      </template>
+    </el-dialog>
 
     <div class="stage">
       <div v-if="visibleSuggestions.length && sugsOpen" class="sugs">
@@ -393,9 +506,35 @@ h2 {
   color: #d7fff8;
   background: rgba(45, 212, 191, 0.12);
 }
+.who-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.who-btn:hover {
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.1);
+}
 .who {
   font-size: 12px;
   color: var(--text-muted);
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.who-caret {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1;
 }
 .fname {
   max-width: 220px;

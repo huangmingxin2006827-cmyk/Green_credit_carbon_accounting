@@ -15,6 +15,7 @@ const router = express.Router()
 router.post('/auth/login', authController.login)
 router.post('/auth/register', authController.register)
 router.get('/auth/me', requireAuth, authController.me)
+router.post('/auth/change-password', requireAuth, authController.changePassword)
 
 router.use(requireAuth)
 

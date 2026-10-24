@@ -104,11 +104,16 @@ export async function consumeSse(path, body, { onText, onDone, onError, onReady 
         }
         if (payload.done) {
           sawDone = true
-          if (!pump.getFull() && payload.answer) {
-            pump.push(payload.answer)
+          // 后端终稿 answer 优先（已拆 JSON / 去转义），避免沿用带 \ 的流式半成品
+          const finalText =
+            typeof payload.answer === 'string' && payload.answer.length
+              ? payload.answer
+              : pump.getFull()
+          if (!pump.getFull() && finalText) {
+            pump.push(finalText)
           }
           await pump.waitIdle()
-          onDone?.(payload, pump.getFull())
+          onDone?.(payload, finalText)
         }
       }
     }
@@ -144,6 +149,39 @@ export function register(username, password, displayName) {
 
 export function fetchMe() {
   return apiJson('/auth/me')
+}
+
+export async function changePassword(oldPassword, newPassword) {
+  const res = await fetch(`${BASE}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ oldPassword, newPassword }),
+  })
+  const json = await res.json().catch(() => null)
+  if (!res.ok) {
+    if (res.status === 401) {
+      // 旧密码错误等：跳登录前写入提示，登录页用 ElMessage 展示（无确认按钮）
+      try {
+        sessionStorage.setItem('auth_flash', '原密码错误，请重新登录')
+      } catch {
+        /* ignore */
+      }
+      clearAuth()
+      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+        window.location.href = '/login'
+      }
+      const err = new Error(json?.message || '原密码错误，请重新登录')
+      err.code = json?.code || 'UNAUTHORIZED'
+      throw err
+    }
+    const err = new Error(json?.message || `HTTP ${res.status}`)
+    err.code = json?.code
+    throw err
+  }
+  return unwrap(json)
 }
 
 export function getChatHistory() {

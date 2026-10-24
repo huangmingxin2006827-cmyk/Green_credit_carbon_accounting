@@ -61,7 +61,18 @@ async function onSubmit() {
   }
 }
 
-onMounted(runIntro)
+onMounted(() => {
+  runIntro()
+  try {
+    const flash = sessionStorage.getItem('auth_flash')
+    if (flash) {
+      sessionStorage.removeItem('auth_flash')
+      ElMessage.error(flash)
+    }
+  } catch {
+    /* ignore */
+  }
+})
 onUnmounted(clearTimers)
 </script>
 

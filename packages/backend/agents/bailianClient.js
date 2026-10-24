@@ -163,41 +163,62 @@ async function completeApp({ appId, messages, incremental, onText }) {
   return emitted
 }
 
+function normalizeAnswerText(raw) {
+  let s = String(raw || '')
+  s = s.replace(/\\r\\n/g, '\n')
+  s = s.replace(/\\n/g, '\n')
+  s = s.replace(/\\r/g, '\n')
+  s = s.replace(/\\t/g, '\t')
+  s = s.replace(/\\"/g, '"')
+  s = s.replace(/\\'/g, "'")
+  s = s.replace(/\\\\/g, '\\')
+  // 误残留在中文/标点前的单独反斜杠
+  s = s.replace(/\\(?=[\u4e00-\u9fff，。；：、！？《》（）【】])/g, '')
+  return s
+}
+
+function looksLikeAnswerShell(s) {
+  const t = String(s || '').trim()
+  return t.startsWith('{') || t.startsWith('```') || /"answer"\s*:/.test(t)
+}
+
 function unwrapAnswer(raw) {
   const text = String(raw || '').trim()
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   const candidate = fenced ? fenced[1].trim() : text
   try {
     const parsed = JSON.parse(candidate)
-    if (parsed && typeof parsed.answer === 'string') return parsed.answer
+    if (parsed && typeof parsed.answer === 'string') return normalizeAnswerText(parsed.answer)
     if (Array.isArray(parsed)) return parsed
     if (parsed && typeof parsed === 'object') return parsed
   } catch {
   }
-  return candidate
+  return looksLikeAnswerShell(candidate) ? candidate : normalizeAnswerText(candidate)
 }
 
 function peekAnswer(raw) {
   const text = String(raw || '')
   const parsed = unwrapAnswer(text)
-  if (typeof parsed === 'string' && parsed !== text.trim()) return parsed
+  if (typeof parsed === 'string' && parsed !== text.trim() && !looksLikeAnswerShell(parsed)) {
+    return normalizeAnswerText(parsed)
+  }
   try {
     const obj = JSON.parse(text.trim())
-    if (obj && typeof obj.answer === 'string') return obj.answer
+    if (obj && typeof obj.answer === 'string') return normalizeAnswerText(obj.answer)
   } catch {
     /* partial json */
   }
   const match = text.match(/"answer"\s*:\s*"/)
   if (!match) {
     if (text.trim().startsWith('{') || text.trim().startsWith('```')) return ''
-    return text
+    return normalizeAnswerText(text)
   }
   let out = ''
   for (let i = match.index + match[0].length; i < text.length; i += 1) {
     const ch = text[i]
     if (ch === '\\' && i + 1 < text.length) {
       const n = text[i + 1]
-      const map = { n: '\n', t: '\t', r: '\r', '"': '"', '\\': '\\' }
+      const map = { n: '\n', t: '\t', r: '\r', '"': '"', '\\': '\\', '/': '/' }
       out += map[n] !== undefined ? map[n] : n
       i += 1
       continue
@@ -205,7 +226,7 @@ function peekAnswer(raw) {
     if (ch === '"') break
     out += ch
   }
-  return out
+  return normalizeAnswerText(out)
 }
 
-module.exports = { completeApp, unwrapAnswer, peekAnswer }
+module.exports = { completeApp, unwrapAnswer, peekAnswer, normalizeAnswerText, looksLikeAnswerShell }

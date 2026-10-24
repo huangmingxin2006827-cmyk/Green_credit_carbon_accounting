@@ -107,9 +107,11 @@ export const useChatStore = defineStore('chat', () => {
         if (keepUntilFirstChunk && !String(full || '').length) return
         patchAssistant({ content: full, streaming: true, regenerating: false })
       },
-      onDone(_payload, full) {
-        // 有新全文则写入；否则保留气泡里已有内容（含刷新未出首包时的旧文案）
-        const next = String(full || '').length ? full : assistant.content
+      onDone(payload, full) {
+        // done.answer / full 优先；刷新未出首包时退回气泡已有内容
+        const fromDone =
+          typeof payload?.answer === 'string' && payload.answer.length ? payload.answer : ''
+        const next = fromDone || (String(full || '').length ? full : assistant.content)
         patchAssistant({ content: next, streaming: false, regenerating: false })
       },
       onError(err) {
