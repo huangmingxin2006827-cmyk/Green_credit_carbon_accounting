@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   ElAlert,
@@ -252,6 +252,18 @@ function onKeydown(e) {
     onSubmit()
   }
 }
+
+function autoResizeInput() {
+  const el = inputRef.value
+  if (!el) return
+  el.style.height = '0px'
+  el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+}
+
+watch(inputText, async () => {
+  await nextTick()
+  autoResizeInput()
+})
 </script>
 
 <template>
@@ -441,12 +453,13 @@ function onKeydown(e) {
           title="上传用电明细"
         />
       </el-upload>
-      <input
+      <textarea
         ref="inputRef"
         v-model="inputText"
-        type="text"
+        rows="1"
         placeholder="请输入问题，例如「根据这份数据写一份绿色信贷风险评估报告」"
         @keydown="onKeydown"
+        @input="autoResizeInput"
       />
       <RevealBtn
         class="send"
@@ -742,7 +755,7 @@ h2 {
 }
 .composer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.02);
@@ -752,25 +765,31 @@ h2 {
 .clip {
   flex-shrink: 0;
 }
-input {
+textarea {
   flex: 1;
   min-width: 0;
+  min-height: 36px;
+  max-height: 160px;
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  padding: 0 14px;
+  border-radius: 18px;
+  padding: 8px 14px;
   font-family: inherit;
   font-size: 13px;
+  line-height: 1.45;
   outline: none;
+  resize: none;
+  overflow-y: auto;
   color: var(--text-primary);
   caret-color: var(--primary);
   background: rgba(255, 255, 255, 0.06);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  box-sizing: border-box;
 }
-input::placeholder {
+textarea::placeholder {
   color: var(--text-muted);
 }
-input:focus {
+textarea:focus {
   border-color: rgba(45, 212, 191, 0.55);
   background: rgba(255, 255, 255, 0.09);
   box-shadow: var(--glow-primary);
@@ -779,5 +798,46 @@ input:focus {
   flex-shrink: 0;
   height: 36px;
   min-width: 36px;
+}
+</style>
+
+<!-- append-to-body 弹层不受 scoped 约束 -->
+<style>
+.pwd-dialog .el-input__wrapper {
+  background-color: rgba(18, 26, 24, 0.92) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+}
+.pwd-dialog .el-input__wrapper:hover {
+  background-color: rgba(22, 32, 30, 0.95) !important;
+}
+.pwd-dialog .el-input__wrapper.is-focus {
+  background-color: rgba(24, 34, 32, 0.98) !important;
+  box-shadow:
+    0 0 0 1px rgba(45, 212, 191, 0.55) inset,
+    0 0 0 3px rgba(45, 212, 191, 0.12) !important;
+}
+.pwd-dialog .el-input__inner {
+  color: var(--text-primary, #eef7f4);
+  background: transparent !important;
+  -webkit-text-fill-color: var(--text-primary, #eef7f4);
+  caret-color: var(--primary, #2dd4bf);
+  transition: background-color 99999s ease-in-out 0s;
+}
+.pwd-dialog .el-input__inner::placeholder {
+  color: var(--text-muted, #94aaa3);
+  -webkit-text-fill-color: var(--text-muted, #94aaa3);
+}
+.pwd-dialog .el-input__inner:-webkit-autofill,
+.pwd-dialog .el-input__inner:-webkit-autofill:hover,
+.pwd-dialog .el-input__inner:-webkit-autofill:focus,
+.pwd-dialog .el-input__inner:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary, #eef7f4) !important;
+  caret-color: var(--primary, #2dd4bf);
+  box-shadow: 0 0 0 100px rgba(18, 26, 24, 1) inset !important;
+  -webkit-box-shadow: 0 0 0 100px rgba(18, 26, 24, 1) inset !important;
+  transition: background-color 99999s ease-in-out 0s;
+}
+.pwd-dialog .el-input__suffix {
+  color: rgba(255, 255, 255, 0.55);
 }
 </style>
