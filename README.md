@@ -124,6 +124,19 @@ npm run dev
 | `li` | 李经理 | `123456` |
 | `wang` | 王经理 | `123456` |
 
+## 数据表（MySQL）
+
+库名默认 `green_credit`，业务数据按用户隔离。建表脚本见 [`packages/backend/sql/schema.sql`](packages/backend/sql/schema.sql)。
+
+| 表名 | 用途 |
+|---|---|
+| `users` | 注册用户与密码哈希 |
+| `uploads` | 上传的用电明细及解析结果 |
+| `reports` | 碳足迹报告正文、核算与图表 JSON |
+| `suggestions` | AI 减排建议及采纳状态 |
+| `tasks` | 由建议转化的待办任务 |
+| `chat_messages` | 对话历史（登录后可恢复） |
+
 ## 主要功能
 
 1. 注册 / 登录（JWT）
