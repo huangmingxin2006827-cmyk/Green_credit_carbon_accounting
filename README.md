@@ -28,16 +28,23 @@ Node.js (Express)
               └─ 碳金融问答（挂载知识库）
 ```
 
-- 前端：`packages/frontend`（开发端口默认 5180）
-- 后端：`packages/backend`（端口 3000）
-- 样例数据：`demo-data/`
+- 前端：`packages/frontend`（开发端口默认 **5180**）
+- 后端：`packages/backend`（端口 **3000**）
+- 样例数据：`demo-data/`（五个行业演示 Excel）
 - 行业强度对标：`行业碳强度对标_单位工业增加值口径.csv`
 
 ## 环境要求
 
-- Node.js 18+
-- MySQL 8+
-- 阿里云百炼 API Key，以及三个已发布应用的 App Id
+请先确认本机已具备：
+
+| 依赖 | 说明 |
+|---|---|
+| Node.js 18+ | 终端执行 `node -v`，版本需 ≥ 18 |
+| npm | 随 Node 安装；`npm -v` 可查 |
+| MySQL 8+ | 服务已启动，并有可登录账号（记住用户名与密码） |
+| 阿里云百炼 | API Key，以及三个**已发布**应用的 App Id；其中对话应用须挂载「碳金融知识库」 |
+
+未配置百炼时：上传、核算、图表仍可使用；报告生成、减排建议、知识问答会失败。
 
 ## 依赖清单
 
@@ -70,7 +77,14 @@ Node.js (Express)
 
 ## 环境变量
 
-模板文件：[`packages/backend/.env.example`](packages/backend/.env.example)。复制为 `.env` 后按本机填写（**不要将真实 `.env` 提交到 Git**）。
+模板文件：[`packages/backend/.env.example`](packages/backend/.env.example)。
+
+**请复制为 `.env` 后只在本机填写真实值；不要将真实 `.env`、API Key、App Id 提交到 Git。**
+
+```bash
+cd packages/backend
+copy .env.example .env
+```
 
 | 变量 | 含义 |
 |---|---|
@@ -83,36 +97,66 @@ Node.js (Express)
 | `MYSQL_HOST` / `MYSQL_PORT` | 数据库主机与端口 |
 | `MYSQL_USER` / `MYSQL_PASSWORD` | 数据库账号密码 |
 | `MYSQL_DATABASE` | 库名，默认 `green_credit` |
-| `JWT_SECRET` | JWT 签名密钥 |
+| `JWT_SECRET` | JWT 签名密钥（请换成自己的随机字符串） |
 
-## 安装与运行
+## 安装与运行（首次部署）
+
+按顺序执行：
+
+### 1. 获取代码并安装依赖
 
 ```bash
-# 1. 安装依赖
+git clone <本仓库地址>
+cd Green_credit_carbon_accounting
 npm run install:all
+```
 
-# 2. 配置后端环境变量
+### 2. 配置后端环境变量
+
+```bash
 cd packages/backend
 copy .env.example .env
 ```
 
-编辑 `.env`：填写 `DASHSCOPE_API_KEY`、三个 `DASHSCOPE_APP_ID_*`，以及本机 MySQL 账号密码。  
-其中对话应用应对应已挂载「碳金融知识库」的碳金融问答助手。
+用编辑器打开 `.env`，填入：
+
+- 本机 MySQL 的 `MYSQL_USER` / `MYSQL_PASSWORD`
+- `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`
+- 自定义 `JWT_SECRET`
+
+### 3. 初始化数据库
+
+确认 MySQL 服务已启动，然后在 `packages/backend` 目录执行：
 
 ```bash
-# 3. 初始化数据库（在 packages/backend 目录）
 npm run db:init
-
-# 4. 启动后端
-npm run dev
-
-# 5. 另开终端启动前端
-cd packages/frontend
-npm run dev
 ```
 
-浏览器打开控制台提示的地址（一般为 `http://localhost:5180`）。  
-也可使用仓库根目录的 `启动项目.bat` / `关闭项目.bat`。
+会创建库表并写入演示账号（见下文）。
+
+### 4. 启动服务
+
+**方式 A：两个终端（推荐首次排查问题）**
+
+```bash
+# 终端 1 — 项目根目录
+npm run dev:backend
+
+# 终端 2 — 项目根目录
+npm run dev:frontend
+```
+
+**方式 B：Windows 一键脚本（需已完成上面 1～3 步）**
+
+双击仓库根目录的 `启动项目.bat`（会打开前后端窗口并尝试打开浏览器）。  
+停止时运行 `关闭项目.bat`。
+
+### 5. 打开页面
+
+浏览器访问：**http://localhost:5180**
+
+- 前端开发服务器：`5180`
+- 后端 API：`3000`（前端已代理 `/api`）
 
 ## 演示账号
 
@@ -123,6 +167,20 @@ npm run dev
 | `zhang` | 张经理 | `123456` |
 | `li` | 李经理 | `123456` |
 | `wang` | 王经理 | `123456` |
+
+## 演示数据（上传 Excel）
+
+目录：[`demo-data/`](demo-data/)。登录后上传下列**任意一个**即可走通核算 → 图表 → 报告流程。
+
+| 文件 | 适合演示 |
+|---|---|
+| `01-纺织业-河南.xlsx` | **推荐主演示**；强度对标印染/纺织 |
+| `02-钢铁-河北.xlsx` | 高碳强度对比 |
+| `03-化工-山东.xlsx` | 中等强度 |
+| `04-造纸-浙江.xlsx` | 偏高制造业 |
+| `05-建材-河南.xlsx` | 常见信贷相关行业 |
+
+五个文件均含「年工业增加值」，可展示第四张「单位增加值碳强度对标」图。更多说明见 [`demo-data/README.txt`](demo-data/README.txt)。
 
 ## 数据表（MySQL）
 
@@ -139,19 +197,30 @@ npm run dev
 
 ## 主要功能
 
-1. 注册 / 登录（JWT）
+1. 注册 / 登录（JWT）；支持修改密码
 2. 上传企业用电 Excel，解析用电结构并计算排放
 3. 四类图表：趋势、对比、构成占比、单位增加值碳强度对标
 4. SSE 流式生成碳足迹报告；可编辑并导出 Markdown / Word / PDF
 5. 报告就绪后并行生成三条减排建议；采纳后进入待办任务
 6. 碳知识问答与报告追问（对话应用 + 知识库检索）
 
+## 常见问题
+
+| 现象 | 可能原因 |
+|---|---|
+| 后端一启动就退出 | MySQL 未启动，或 `.env` 中账号密码 / 库名不正确 |
+| 报告 / 建议 / 对话报错 | 未填写或填错百炼 `DASHSCOPE_API_KEY` / App Id |
+| 没有第四张强度对标图 | 上传的 Excel 缺少「年工业增加值」类列；请用 `demo-data` 中五个样例 |
+| `启动项目.bat` 打不开页面 | 请先完成依赖安装、`.env` 配置与 `db:init`，并确认 5180 端口未被占用 |
+| 改密失败提示原密码错误 | 请确认当前登录密码；演示账号初始密码为 `123456` |
+
 ## 目录说明
 
 ```
 packages/frontend   前端
 packages/backend    后端 API、Agent、核算与导出
-demo-data           样例 Excel
+demo-data           五个行业演示 Excel
+启动项目.bat / 关闭项目.bat   Windows 启停（首次配置完成后再用）
 ```
 
-密钥与真实 `.env` 不要提交到 Git。
+**安全提醒：** 真实 `.env`、API Key、App Id、数据库密码不要提交到 Git；仓库中仅保留 `.env.example` 占位模板。
