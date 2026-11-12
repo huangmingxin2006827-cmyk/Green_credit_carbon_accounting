@@ -79,11 +79,11 @@ Node.js (Express)
 
 模板文件：[`packages/backend/.env.example`](packages/backend/.env.example)。
 
-**请复制为 `.env` 后只在本机填写真实值；不要将真实 `.env`、API Key、App Id 提交到 Git。**
+**请复制为 `.env` 后只在本机填写真实值。**
 
 **AI 功能必填（共 4 项）：** `DASHSCOPE_API_KEY` + `DASHSCOPE_APP_ID_CHAT` / `REPORT` / `SUGGESTION`。  
 未填写时，上传、核算、图表仍可用；**碳足迹报告、减排建议、知识问答会失败**。  
-评委演示用的真实 Key / App Id 见网盘技术文档或私密部署说明（勿写入公开仓库）。
+评委演示用的真实 Key / App Id 见网盘技术文档pdf末尾附页。
 
 ```bash
 cd packages/backend
@@ -119,7 +119,7 @@ copy .env.example .env
 
 1. 克隆仓库后双击根目录 **`一键配置.bat`**
 2. 按提示填写本机 `MYSQL_PASSWORD`（必填才能建库）
-3. **演示 AI 时必须填写** `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（共 4 项；数值见网盘PDF）。若回车跳过：仅可测上传、核算、图表，**报告 / 减排建议 / 知识问答将不可用**
+3. **演示 AI 时必须填写** `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（共 4 项；数值见网盘PDF末尾附页）。若回车跳过：仅可测上传、核算、图表，**报告 / 减排建议 / 知识问答将不可用**
 4. 配置成功后按提示启动，或之后再双击 `启动项目.bat`
 5. 浏览器打开 **http://localhost:5180**，用演示账号登录，上传 `demo-data/01-纺织业-河南.xlsx`
 
@@ -247,5 +247,3 @@ demo-data           五个行业演示 Excel
 一键配置.bat        Windows 首次部署（装依赖 / 配 .env / 建库）
 启动项目.bat / 关闭项目.bat   Windows 日常启停
 ```
-
-**安全提醒：** 真实 `.env`、API Key、App Id、数据库密码不要提交到 Git；仓库中仅保留 `.env.example` 占位模板。
