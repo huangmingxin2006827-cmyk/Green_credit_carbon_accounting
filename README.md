@@ -81,6 +81,10 @@ Node.js (Express)
 
 **请复制为 `.env` 后只在本机填写真实值；不要将真实 `.env`、API Key、App Id 提交到 Git。**
 
+**AI 功能必填（共 4 项）：** `DASHSCOPE_API_KEY` + `DASHSCOPE_APP_ID_CHAT` / `REPORT` / `SUGGESTION`。  
+未填写时，上传、核算、图表仍可用；**碳足迹报告、减排建议、知识问答会失败**。  
+评委演示用的真实 Key / App Id 见网盘技术文档或私密部署说明（勿写入公开仓库）。
+
 ```bash
 cd packages/backend
 copy .env.example .env
@@ -89,10 +93,10 @@ copy .env.example .env
 | 变量 | 含义 |
 |---|---|
 | `PORT` | 后端端口，默认 `3000` |
-| `DASHSCOPE_API_KEY` | 阿里云百炼 API Key |
-| `DASHSCOPE_APP_ID_CHAT` | 碳金融问答应用（须挂载知识库） |
-| `DASHSCOPE_APP_ID_REPORT` | 碳足迹报告应用 |
-| `DASHSCOPE_APP_ID_SUGGESTION` | 减排建议应用 |
+| `DASHSCOPE_API_KEY` | 阿里云百炼 API Key（**AI 必填**） |
+| `DASHSCOPE_APP_ID_CHAT` | 碳金融问答应用（须挂载知识库，**AI 必填**） |
+| `DASHSCOPE_APP_ID_REPORT` | 碳足迹报告应用（**AI 必填**） |
+| `DASHSCOPE_APP_ID_SUGGESTION` | 减排建议应用（**AI 必填**） |
 | `BAILIAN_TIMEOUT_MS` | 百炼请求超时（毫秒），默认 `300000` |
 | `MYSQL_HOST` / `MYSQL_PORT` | 数据库主机与端口 |
 | `MYSQL_USER` / `MYSQL_PASSWORD` | 数据库账号密码 |
@@ -115,7 +119,7 @@ copy .env.example .env
 
 1. 克隆仓库后双击根目录 **`一键配置.bat`**
 2. 按提示填写本机 `MYSQL_PASSWORD`（必填才能建库）
-3. 百炼 `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*` **可回车跳过**（跳过仍可测上传、核算、图表；报告/建议/对话需填写）
+3. **演示 AI 时必须填写** `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（共 4 项；数值见网盘PDF）。若回车跳过：仅可测上传、核算、图表，**报告 / 减排建议 / 知识问答将不可用**
 4. 配置成功后按提示启动，或之后再双击 `启动项目.bat`
 5. 浏览器打开 **http://localhost:5180**，用演示账号登录，上传 `demo-data/01-纺织业-河南.xlsx`
 
@@ -141,7 +145,7 @@ copy .env.example .env
 用编辑器打开 `.env`，填入：
 
 - 本机 MySQL 的 `MYSQL_USER` / `MYSQL_PASSWORD`
-- `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（可选，无则 AI 功能不可用）
+- **AI 必填：** `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（缺一则报告/建议/问答不可用；取值见网盘私密说明）
 - 自定义 `JWT_SECRET`
 
 #### 3. 初始化数据库
@@ -183,8 +187,8 @@ npm run dev:frontend
 
 | 用户名 | 显示名 | 密码 |
 |---|---|---|
+| `admin` | 管理员 | `123456` |
 | `zhang` | 张经理 | `123456` |
-| `li` | 李经理 | `123456` |
 | `wang` | 王经理 | `123456` |
 
 ## 演示数据（上传 Excel）
