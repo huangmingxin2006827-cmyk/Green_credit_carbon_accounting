@@ -65,7 +65,7 @@ echo Opening http://localhost:5180/
 start "" "http://localhost:5180/"
 echo.
 echo [OK] Backend and frontend started in other windows.
-echo To stop, run 关闭项目.bat
+echo To stop, run the Stop Project bat.
 echo.
 pause
 endlocal
