@@ -147,6 +147,11 @@ async function removeTask(taskId, userId) {
   return task
 }
 
+async function clearTasks(userId) {
+  const result = await query('DELETE FROM tasks WHERE user_id = ?', [userId])
+  return { cleared: result?.affectedRows ?? 0 }
+}
+
 module.exports = {
   listTasks,
   getTask,
@@ -155,5 +160,6 @@ module.exports = {
   toggleChecklist,
   completeTask,
   removeTask,
+  clearTasks,
   sortTasks,
 }

@@ -1,7 +1,15 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ElTag, ElCheckbox, ElCollapse, ElCollapseItem, ElButton, ElMessage } from 'element-plus'
+import {
+  ElTag,
+  ElCheckbox,
+  ElCollapse,
+  ElCollapseItem,
+  ElButton,
+  ElMessage,
+  ElMessageBox,
+} from 'element-plus'
 import { Check, Close, Delete } from '@element-plus/icons-vue'
 import RevealBtn from './RevealBtn.vue'
 import { deleteTask } from '../api/http'
@@ -11,6 +19,7 @@ const taskStore = useTaskStore()
 const { taskList, bubbleVisible } = storeToRefs(taskStore)
 const pop = ref(false)
 const expanded = ref([])
+const clearing = ref(false)
 
 watch(bubbleVisible, (open) => {
   if (open) pop.value = true
@@ -38,6 +47,30 @@ async function onRemove(task) {
     ElMessage.error(err.message || '删除失败')
   }
 }
+
+async function onClearAll() {
+  if (!taskList.value.length || clearing.value) return
+  try {
+    await ElMessageBox.confirm('确认清空全部待办任务？此操作不可恢复。', '清空待办', {
+      confirmButtonText: '清空',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch (err) {
+    if (err === 'cancel' || err === 'close') return
+    ElMessage.error(err?.message || '无法打开确认框')
+    return
+  }
+  clearing.value = true
+  try {
+    await taskStore.clearAll()
+    ElMessage.success('已清空全部待办')
+  } catch (err) {
+    ElMessage.error(err?.message || '清空失败')
+  } finally {
+    clearing.value = false
+  }
+}
 </script>
 
 <template>
@@ -47,6 +80,14 @@ async function onRemove(task) {
         <header>
           <h2>任务待办</h2>
           <el-tag size="small" type="info">{{ taskList.length }}</el-tag>
+          <RevealBtn
+            class="clear-all"
+            :icon="Delete"
+            label="清空"
+            text
+            :loading="clearing"
+            @click.stop="onClearAll"
+          />
           <el-button
             class="x"
             :icon="Close"
@@ -162,6 +203,13 @@ h2 {
   font-size: 15px;
   flex: 1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.clear-all {
+  flex-shrink: 0;
+  --el-button-text-color: #f87171;
+  --el-button-hover-text-color: #fca5a5;
+  --el-button-active-text-color: #fca5a5;
+  font-weight: 600;
 }
 .x {
   flex-shrink: 0;

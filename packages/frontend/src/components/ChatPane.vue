@@ -701,6 +701,27 @@ h2 {
   font-family: Consolas, 'Courier New', monospace;
   font-size: 12.5px;
 }
+.assistant .bubble .md :deep(blockquote) {
+  margin: 0.75em 0 0.15em;
+  padding: 8px 10px 8px 12px;
+  border-left: 3px solid rgba(45, 212, 191, 0.55);
+  border-radius: 0 8px 8px 0;
+  background: rgba(45, 212, 191, 0.06);
+  color: var(--text-muted, rgba(255, 255, 255, 0.62));
+  font-size: 12px;
+  line-height: 1.5;
+}
+.assistant .bubble .md :deep(blockquote p) {
+  margin: 0 0 0.3em;
+}
+.assistant .bubble .md :deep(blockquote p:last-child) {
+  margin-bottom: 0;
+}
+.assistant .bubble .md :deep(blockquote ul),
+.assistant .bubble .md :deep(blockquote ol) {
+  margin: 0.15em 0 0;
+  padding-left: 1.1em;
+}
 .assistant .bubble,
 .system .bubble {
   background: rgba(23, 31, 29, 0.72);

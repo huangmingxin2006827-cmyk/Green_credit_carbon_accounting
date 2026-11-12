@@ -1,5 +1,12 @@
 const { ok } = require('../utils/response')
-const { listTasks, updateStatus, completeTask, toggleChecklist, removeTask } = require('../services/taskService')
+const {
+  listTasks,
+  updateStatus,
+  completeTask,
+  toggleChecklist,
+  removeTask,
+  clearTasks,
+} = require('../services/taskService')
 
 async function list(req, res, next) {
   try {
@@ -41,4 +48,12 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, patchStatus, complete, checklist, remove }
+async function clear(req, res, next) {
+  try {
+    res.json(ok(await clearTasks(req.user.id)))
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { list, patchStatus, complete, checklist, remove, clear }

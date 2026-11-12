@@ -262,6 +262,10 @@ export function deleteTask(id) {
   return apiJson(`/tasks/${id}`, { method: 'DELETE' })
 }
 
+export function clearTasks() {
+  return apiJson('/tasks', { method: 'DELETE' })
+}
+
 export function chatKnowledge(payload, handlers) {
   return consumeSse('/chat', payload, handlers)
 }

@@ -9,6 +9,16 @@ const {
 
 const MAX_ROUNDS = 10
 
+const FORMAT_HINT = [
+  '# 输出格式',
+  '先写结论与对照分析正文；涉及标准、排放因子、法规或知识库依据时，不要把长出处嵌进正文句子。',
+  '文末单独用 Markdown 引用块列出出处，固定形态：',
+  '> **数据出处**',
+  '> - 碳强度基准：…；来源：…',
+  '> - 电力排放因子：…；来源：…',
+  '无出处可引时省略该引用块。',
+].join('\n')
+
 function buildMessages(question, history, report, benchmark) {
   const recent = (history || []).slice(-MAX_ROUNDS)
   const contextBlock = report
@@ -19,7 +29,10 @@ function buildMessages(question, history, report, benchmark) {
       })}\n\n行业基准：\n${benchmark ? JSON.stringify(benchmark) : 'null'}\n\n`
     : ''
   const messages = recent.map((m) => ({ role: m.role, content: m.content }))
-  messages.push({ role: 'user', content: `${contextBlock}用户问题：${question}` })
+  messages.push({
+    role: 'user',
+    content: `${contextBlock}用户问题：${question}\n\n${FORMAT_HINT}`,
+  })
   return messages
 }
 

@@ -34,6 +34,7 @@ router.get('/suggestion/latest', suggestionController.latest)
 router.post('/suggestion/:id/action', suggestionController.action)
 
 router.get('/tasks', taskController.list)
+router.delete('/tasks', taskController.clear)
 router.patch('/tasks/:id/status', taskController.patchStatus)
 router.post('/tasks/:id/complete', taskController.complete)
 router.patch('/tasks/:id/checklist', taskController.checklist)

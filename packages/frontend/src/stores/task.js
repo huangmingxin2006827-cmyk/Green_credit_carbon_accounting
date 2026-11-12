@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { deleteTask, listTasks, patchChecklist, patchTaskStatus } from '../api/http'
+import { clearTasks, deleteTask, listTasks, patchChecklist, patchTaskStatus } from '../api/http'
 
 function sortTasks(list) {
   return [...list].sort((a, b) => {
@@ -54,6 +54,10 @@ export const useTaskStore = defineStore('task', {
         this.bubbleVisible = true
         throw err
       }
+    },
+    async clearAll() {
+      await clearTasks()
+      this.resetLocal()
     },
     prepend(task) {
       if (!task) return
