@@ -101,9 +101,29 @@ copy .env.example .env
 
 ## 安装与运行（首次部署）
 
-按顺序执行：
+### Windows 评委推荐路径
 
-### 1. 获取代码并安装依赖
+前置：已安装 **Node.js 18+**、**MySQL 8+**，且 MySQL 服务已启动。
+
+| 脚本 | 何时用 |
+|---|---|
+| `一键配置.bat` | **首次**：安装依赖、生成/填写 `.env`、初始化数据库 |
+| `启动项目.bat` | 配置完成后日常启动前后端并打开浏览器 |
+| `关闭项目.bat` | 停止服务 |
+
+推荐步骤：
+
+1. 克隆仓库后双击根目录 **`一键配置.bat`**
+2. 按提示填写本机 `MYSQL_PASSWORD`（必填才能建库）
+3. 百炼 `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*` **可回车跳过**（跳过仍可测上传、核算、图表；报告/建议/对话需填写）
+4. 配置成功后按提示启动，或之后再双击 `启动项目.bat`
+5. 浏览器打开 **http://localhost:5180**，用演示账号登录，上传 `demo-data/01-纺织业-河南.xlsx`
+
+### 备选：命令行手动部署
+
+适合非 Windows，或不想使用 bat 时。
+
+#### 1. 获取代码并安装依赖
 
 ```bash
 git clone <本仓库地址>
@@ -111,7 +131,7 @@ cd Green_credit_carbon_accounting
 npm run install:all
 ```
 
-### 2. 配置后端环境变量
+#### 2. 配置后端环境变量
 
 ```bash
 cd packages/backend
@@ -121,10 +141,10 @@ copy .env.example .env
 用编辑器打开 `.env`，填入：
 
 - 本机 MySQL 的 `MYSQL_USER` / `MYSQL_PASSWORD`
-- `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`
+- `DASHSCOPE_API_KEY` 与三个 `DASHSCOPE_APP_ID_*`（可选，无则 AI 功能不可用）
 - 自定义 `JWT_SECRET`
 
-### 3. 初始化数据库
+#### 3. 初始化数据库
 
 确认 MySQL 服务已启动，然后在 `packages/backend` 目录执行：
 
@@ -134,9 +154,9 @@ npm run db:init
 
 会创建库表并写入演示账号（见下文）。
 
-### 4. 启动服务
+#### 4. 启动服务
 
-**方式 A：两个终端（推荐首次排查问题）**
+**方式 A：两个终端**
 
 ```bash
 # 终端 1 — 项目根目录
@@ -146,12 +166,11 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-**方式 B：Windows 一键脚本（需已完成上面 1～3 步）**
+**方式 B：Windows（需已完成上面 1～3 步或已跑过一键配置）**
 
-双击仓库根目录的 `启动项目.bat`（会打开前后端窗口并尝试打开浏览器）。  
-停止时运行 `关闭项目.bat`。
+双击 `启动项目.bat`；停止时运行 `关闭项目.bat`。
 
-### 5. 打开页面
+#### 5. 打开页面
 
 浏览器访问：**http://localhost:5180**
 
@@ -211,7 +230,8 @@ npm run dev:frontend
 | 后端一启动就退出 | MySQL 未启动，或 `.env` 中账号密码 / 库名不正确 |
 | 报告 / 建议 / 对话报错 | 未填写或填错百炼 `DASHSCOPE_API_KEY` / App Id |
 | 没有第四张强度对标图 | 上传的 Excel 缺少「年工业增加值」类列；请用 `demo-data` 中五个样例 |
-| `启动项目.bat` 打不开页面 | 请先完成依赖安装、`.env` 配置与 `db:init`，并确认 5180 端口未被占用 |
+| `启动项目.bat` 打不开页面 | 请先运行 `一键配置.bat`（或完成依赖 / `.env` / `db:init`），并确认 5180 端口未被占用 |
+| `一键配置.bat` 在 db:init 失败 | MySQL 未启动，或 `.env` 中密码与本机 root 密码不一致 |
 | 改密失败提示原密码错误 | 请确认当前登录密码；演示账号初始密码为 `123456` |
 
 ## 目录说明
@@ -220,7 +240,8 @@ npm run dev:frontend
 packages/frontend   前端
 packages/backend    后端 API、Agent、核算与导出
 demo-data           五个行业演示 Excel
-启动项目.bat / 关闭项目.bat   Windows 启停（首次配置完成后再用）
+一键配置.bat        Windows 首次部署（装依赖 / 配 .env / 建库）
+启动项目.bat / 关闭项目.bat   Windows 日常启停
 ```
 
 **安全提醒：** 真实 `.env`、API Key、App Id、数据库密码不要提交到 Git；仓库中仅保留 `.env.example` 占位模板。
